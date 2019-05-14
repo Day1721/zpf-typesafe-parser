@@ -1,6 +1,13 @@
-{-# LANGUAGE TypeInType, TypeFamilies, GADTs, RankNTypes, RebindableSyntax, FlexibleInstances, TypeOperators #-}
+{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RebindableSyntax #-}
 
-module Dependant.Single where
+module Basic.Single where
 
 import Prelude hiding ((>>=))
 import Data.Kind

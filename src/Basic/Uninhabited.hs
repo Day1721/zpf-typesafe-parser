@@ -1,8 +1,10 @@
-{-# LANGUAGE TemplateHaskell, EmptyCase, LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE EmptyCase #-}
+{-# LANGUAGE LambdaCase #-}
 
-module Dependant.Uninhabited (
+module Basic.Uninhabited (
     Uninhabited (..),
-    Dependant.Uninhabited.absurd,
+    Basic.Uninhabited.absurd,
     uninhabited
 ) where
 

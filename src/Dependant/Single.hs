@@ -5,10 +5,7 @@ module Dependant.Single where
 import Prelude hiding ((>>=))
 import Data.Kind
 
--- data family Singl :: k -> Type
-
 -- existentional wrapper for Singl a
-
 data SomeSingl k where
     SomeSingl :: Singl (a :: k) -> SomeSingl k
 
@@ -29,10 +26,14 @@ withSingl :: WithSinglT
 withSingl x f = case toSingl x of
     SomeSingl y -> f y
 
--- monadic operator, can use as (>>=) in 'do' block (see RebindableSyntax)
+-- monadic operator, can use as (>>=) in 'do' block (see RebindableSyntax, return |=> SomeSingl)
 infixl 1 >=>
 (>=>) :: WithSinglT
 (>=>) = withSingl
+
+-- when using a RebindableSyntax for 'do' block, you can just define a top-level (>>=) operator
+-- to behave like (>=>) with the same type, so you wouldn't write 'where' part every time
+-- (then if you want to use 'do' with the monad, just add "where (>>=) = Prelude.(>>=)")
 
 -- TODO generation
 instance Single Bool where
@@ -60,21 +61,3 @@ instance Single a => Single [a] where
         SomeSingl (SCons h t) where
             (>>=) :: WithSinglT
             (>>=) = (>=>)
-    -- toSingl (h:t) = h >>= (\h' -> 
-    --     t >>= (\t' -> 
-    --     SomeSingl (SCons h' t'))) where
-    --         (>>=) = (>=>)
-
--- TODO make this work :D
-class Single a => ISingl (x :: a) where
-    singl :: Singl x
-
--- TODO implement
-instance ISingl (b::Bool) where
-    singl = undefined
-
-instance ISingl 'True where
-    singl = STrue
-
-instance ISingl 'False where
-    singl = SFalse

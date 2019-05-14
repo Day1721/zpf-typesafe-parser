@@ -39,3 +39,5 @@ uninhabited tq = tq >>= \t -> let
     instance Uninhabited $t' where
         uninhabitedLift x = case x of { } 
     |]
+
+-- example of uninhabitable type: S n :~: Z where S - successor, Z - zero

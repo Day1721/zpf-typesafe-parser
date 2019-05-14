@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 583322f2e0b6a2f0a27537b6fbac0ba61d078393d4c3d24f923640b5e8e6a9cc
+-- hash: 57db04b9cbb1194940e0578948e99a8e8d7be371493384f78e5d2bc7a5c4e085
 
 name:           zpf-typesafe-parser
 version:        0.1.0.0
@@ -28,7 +28,7 @@ library
   exposed-modules:
       Dependant.Single
       Dependant.Uninhabited
-      Lib
+      Main
   other-modules:
       Paths_zpf_typesafe_parser
   hs-source-dirs:
@@ -42,9 +42,11 @@ library
 executable zpf-typesafe-parser-exe
   main-is: Main.hs
   other-modules:
+      Dependant.Single
+      Dependant.Uninhabited
       Paths_zpf_typesafe_parser
   hs-source-dirs:
-      app
+      src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5

@@ -30,7 +30,7 @@ library:
 executables:
   zpf-typesafe-parser-exe:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         src
     ghc-options:
     - -threaded
     - -rtsopts

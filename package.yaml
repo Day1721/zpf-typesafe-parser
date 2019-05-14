@@ -22,6 +22,7 @@ description:         Please see the README on GitHub at <https://github.com/Day1
 dependencies:
 - base >= 4.7 && < 5
 - template-haskell >= 2.13 && < 3
+- megaparsec >= 7.0.4 && < 8
 
 library:
   source-dirs: src

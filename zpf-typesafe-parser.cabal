@@ -30,6 +30,8 @@ library
       Basic.Single
       Basic.Uninhabited
       Numeral.Nat
+      Parser
+      SyntaxTree
   other-modules:
       Paths_zpf_typesafe_parser
   hs-source-dirs:

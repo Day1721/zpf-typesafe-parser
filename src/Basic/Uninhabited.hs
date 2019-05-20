@@ -32,13 +32,13 @@ absurd h = V.absurd (uninhabitedLift h)
 -- | @ tq empty type representation
 uninhabited :: TH.TypeQ -> TH.DecsQ
 uninhabited tq = tq >>= \t -> let
-    t' = return (liftT t)
+    rt = return (liftT t)
     liftT :: TH.Type -> TH.Type
     liftT = \case
-        TH.ForallT _ _ t -> liftT t
-        t -> t
+        TH.ForallT _ _ t' -> liftT t'
+        t' -> t'
     in [d| 
-    instance Uninhabited $t' where
+    instance Uninhabited $rt where
         uninhabitedLift x = case x of { } 
     |]
 

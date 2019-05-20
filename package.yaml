@@ -23,9 +23,13 @@ dependencies:
 - base >= 4.7 && < 5
 - template-haskell >= 2.13 && < 3
 - megaparsec >= 7.0.4 && < 8
+- reflection >= 2.1.4 && < 3
 
 library:
   source-dirs: src
+
+ghc-options:
+  -Werror=incomplete-patterns
 
 executables:
   zpf-typesafe-parser-exe:

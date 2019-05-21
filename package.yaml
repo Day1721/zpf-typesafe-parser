@@ -30,6 +30,7 @@ library:
 
 ghc-options:
   -Werror=incomplete-patterns
+  -Werror=missing-methods
 
 executables:
   zpf-typesafe-parser-exe:

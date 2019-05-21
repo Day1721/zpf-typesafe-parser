@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e5056d3f1bc2943723dbde3f4e9017afd8ab57e8ec688514de233d74c115c631
+-- hash: 3d2f8963b61b967371e0a65d02231dd6add2c8e226f3de8806860628460351c7
 
 name:           zpf-typesafe-parser
 version:        0.1.0.0
@@ -37,7 +37,7 @@ library
       Paths_zpf_typesafe_parser
   hs-source-dirs:
       src
-  ghc-options: -Werror=incomplete-patterns
+  ghc-options: -Werror=incomplete-patterns -Werror=missing-methods
   build-depends:
       base >=4.7 && <5
     , megaparsec >=7.0.4 && <8
@@ -51,7 +51,7 @@ executable zpf-typesafe-parser-exe
       Paths_zpf_typesafe_parser
   hs-source-dirs:
       app
-  ghc-options: -Werror=incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Werror=incomplete-patterns -Werror=missing-methods -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , megaparsec >=7.0.4 && <8
@@ -67,7 +67,7 @@ test-suite zpf-typesafe-parser-test
       Paths_zpf_typesafe_parser
   hs-source-dirs:
       test
-  ghc-options: -Werror=incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Werror=incomplete-patterns -Werror=missing-methods -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , megaparsec >=7.0.4 && <8

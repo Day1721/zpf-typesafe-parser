@@ -8,6 +8,7 @@
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Basic.Single where
 
@@ -16,7 +17,9 @@ import GHC.TypeLits hiding (Text)
 import Data.Kind
 import Data.Proxy
 import Data.String
+import Data.Type.Equality
 import Data.Reflection (reifySymbol)
+import Unsafe.Coerce
 
 -- wrapper for string just to distinguish this from [a] in Demote (String = [Char])
 newtype Text = Text { tStr :: String }
@@ -106,3 +109,9 @@ instance Single Text where
     fromSingl (SText p) = Text $ symbolVal p
     toSingl t = reifySymbol (tStr t) (\p -> SomeSingl $ SText p)
 type SText (x :: Symbol) = Singl x
+
+-- TODO find better way to get simular effect
+isEq :: SText l -> SText r -> Maybe (l :~: r)
+isEq l r = case fromSingl l == fromSingl r of
+    True -> Just (unsafeCoerce Refl)
+    False -> Nothing

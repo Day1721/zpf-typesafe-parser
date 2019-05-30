@@ -19,6 +19,9 @@ runParsing name code = case runParser (pProg :: CtxParser Expr) name code of
     Left err -> Left $ show err
     Right ast -> Right ast
 
+testParsing :: String -> IO ()
+testParsing = parseTest pProg
+
 
 spaceConsumer :: Parser ()
 spaceConsumer = L.space space1 empty blockCmt where

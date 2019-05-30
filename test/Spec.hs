@@ -1,14 +1,20 @@
 import Parser
+import Text.Megaparsec
+import Parser
+import TypeChecking.TC
+import System.Exit
 
 -- TODO add some tests
-tests :: [String]
+tests :: [(String, String)]
 tests = [
-    "let x = 42 in ()"
+    ("test1" , "let x = 42 in ()")
     ]
 
-testOne :: String -> IO ()
-testOne code = return ()
+testOne :: String -> String -> IO ()
+testOne name code = case runParsing name code of
+    Left err -> {-putStrLn err-} testParsing code >> exitWith (ExitFailure 1)
+    Right _ -> return ()
 
 main :: IO ()
 main = putStrLn "Test suite not yet implemented" >> 
-    mapM_ testOne tests
+    mapM_ (uncurry testOne) tests

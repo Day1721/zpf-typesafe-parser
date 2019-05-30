@@ -4,12 +4,21 @@ import Control.Monad
 import Control.Applicative (empty)
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import Data.Void
+import Control.Monad.Combinators.Expr
 import qualified Text.Megaparsec.Char.Lexer as L
 
 import SyntaxTree
 
-type Parser = Parsec String String
+type Parser = Parsec Void String
 type CtxParser d = Parser (d SourcePos)
+
+
+runParsing :: String -> String -> Either String (Expr SourcePos)
+runParsing name code = case runParser (pProg :: CtxParser Expr) name code of
+    Left err -> Left $ show err
+    Right ast -> Right ast
+
 
 spaceConsumer :: Parser ()
 spaceConsumer = L.space space1 empty blockCmt where
@@ -93,13 +102,25 @@ pEApp = try (foldl1 (\l r -> EApp l r (context l)) <$> (many2 pExprSimpl)) <|> p
 pELambda :: CtxParser Expr
 pELambda = withPosition $ do
     reserved "fun"
-    x <- identifier
+    (x, t) <- parens $ do
+        x <- identifier
+        symbol ":"
+        t <- pBType
+        return (x, t)
     symbol "->"
     e <- pExpr
-    return (ELambda x e)
+    return (ELambda x t e)
 
 pLit :: CtxParser Literal
 pLit = withPosition (try pLInt <|> pLDouble <|> pLChar <|> pLString <|> pLUnit <|> pLBool)
+
+pBType :: CtxParser BType
+pBType = makeExprParser typeTerm typeOpers where
+    typeTerm = parens pBType 
+        <|> withPosition (TUnit <$ symbol "()")
+        <|> withPosition (TInt <$ symbol "int")
+    typeOpers = [[InfixR funPars]]
+    funPars = withPosition $ return $ \p x y -> TFun x y p
 
 pLInt = LInt <$> integer
 pLDouble = LDouble <$> double
@@ -107,3 +128,6 @@ pLChar = between (char '\'') (char '\'') (LChar <$> L.charLiteral)
 pLString = LString <$> (char '\"' >> manyTill L.charLiteral (char '\"'))
 pLUnit = symbol "()" >> return LUnit
 pLBool = LBool <$> try ((reserved "true" >> return True) <|> (reserved "false" >> return False))
+
+pProg :: CtxParser Expr
+pProg = between spaceConsumer eof pExpr

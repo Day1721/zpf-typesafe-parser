@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3d2f8963b61b967371e0a65d02231dd6add2c8e226f3de8806860628460351c7
+-- hash: 75916ce92540a0f08c0e37bfb9cb0c91b40ac198d97477f65c4db42aadbb3e04
 
 name:           zpf-typesafe-parser
 version:        0.1.0.0
@@ -28,11 +28,14 @@ source-repository head
 library
   exposed-modules:
       Basic.Single
+      Basic.TH
       Basic.Uninhabited
       Numeral.Nat
       Parser
       SyntaxTree
-      Typechecker
+      TypeChecking.Ast
+      TypeChecking.Basic
+      TypeChecking.TC
   other-modules:
       Paths_zpf_typesafe_parser
   hs-source-dirs:
@@ -41,6 +44,8 @@ library
   build-depends:
       base >=4.7 && <5
     , megaparsec >=7.0.4 && <8
+    , mtl >=2.2.2 && <3
+    , parser-combinators >=1.0.1 && <2
     , reflection >=2.1.4 && <3
     , template-haskell >=2.13 && <3
   default-language: Haskell2010
@@ -55,6 +60,8 @@ executable zpf-typesafe-parser-exe
   build-depends:
       base >=4.7 && <5
     , megaparsec >=7.0.4 && <8
+    , mtl >=2.2.2 && <3
+    , parser-combinators >=1.0.1 && <2
     , reflection >=2.1.4 && <3
     , template-haskell >=2.13 && <3
     , zpf-typesafe-parser
@@ -71,6 +78,8 @@ test-suite zpf-typesafe-parser-test
   build-depends:
       base >=4.7 && <5
     , megaparsec >=7.0.4 && <8
+    , mtl >=2.2.2 && <3
+    , parser-combinators >=1.0.1 && <2
     , reflection >=2.1.4 && <3
     , template-haskell >=2.13 && <3
     , zpf-typesafe-parser

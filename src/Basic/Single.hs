@@ -1,6 +1,6 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
@@ -9,21 +9,28 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Basic.Single where
 
-import Prelude hiding ((>>=))
+import Prelude
 import GHC.TypeLits hiding (Text)
 import Data.Kind
 import Data.Proxy
 import Data.String
 import Data.Type.Equality
 import Data.Reflection (reifySymbol)
-import Unsafe.Coerce
+
 
 -- wrapper for string just to distinguish this from [a] in Demote (String = [Char])
 newtype Text = Text { tStr :: String }
-    deriving (Eq, Show, Read, IsString)
+    deriving (Eq, IsString)
+
+instance Show Text where
+    show (Text t) = t
+instance Read Text where
+    readsPrec _ str = [(Text str, "")]
 
 -- | specifies a kind of type-level value of given type, bijection
 -- | ex. Demote Bool = Bool
@@ -34,6 +41,12 @@ type family Demote k = r | r -> k
 -- | existentional wrapper for Singl a
 data SomeSingl k where
     SomeSingl :: Singl (a :: Demote k) -> SomeSingl k
+
+instance EqDec k => Eq (SomeSingl k) where
+    (SomeSingl l) == (SomeSingl r) = case l === r of
+        Just Refl -> True
+        Nothing -> False
+
 
 class Single k where
     data Singl :: Demote k -> Type
@@ -57,6 +70,11 @@ infixl 1 >=>
 (>=>) :: WithSinglT
 (>=>) = withSingl
 
+-- consider return type in form "l = r \/ ~ l = r"
+infix 4 ===
+class Single k => EqDec k where
+    (===) :: Singl (l :: Demote k) -> Singl (r :: Demote k) -> Maybe (l :~: r)
+
 -- when using a RebindableSyntax for 'do' block, you can just define a top-level (>>=) operator
 -- to behave like (>=>) with the same type, so you wouldn't write 'where' part every time
 -- (then if you want to use 'do' with the monad, just add "where (>>=) = Prelude.(>>=)")
@@ -73,6 +91,11 @@ instance Single Bool where
     toSingl True = SomeSingl STrue
     toSingl False = SomeSingl SFalse
 type SBool b = Singl (b :: Bool)
+instance EqDec Bool where
+    STrue === STrue = return Refl
+    SFalse === SFalse = return Refl
+    _ === _ = Nothing
+
 
 type instance Demote [a] = [Demote a]
 instance Single a => Single [a] where
@@ -86,10 +109,18 @@ instance Single a => Single [a] where
     toSingl (h:t) = do
         h' <- h
         t' <- t
-        SomeSingl (SCons h' t') where
+        return (SCons h' t') where
             (>>=) :: WithSinglT
             (>>=) = (>=>)
+            return = SomeSingl
 type SList (l :: Demote [a]) = Singl l
+instance EqDec a => EqDec [a] where
+    SNil === SNil = Just Refl
+    SCons lh lt === SCons rh rt =
+        lh === rh >~>
+        lt === rt >~>
+        return Refl
+    _ === _ = Nothing
 
 type instance Demote (a,b) = (Demote a, Demote b)
 instance (Single a, Single b) => Single (a,b) where
@@ -100,6 +131,11 @@ instance (Single a, Single b) => Single (a,b) where
         r >=> \r' ->
         SomeSingl (SPair l' r')
 type SPair (x :: Demote (a,b)) = Singl x
+instance (EqDec a, EqDec b) => EqDec (a,b) where
+    SPair la lb === SPair ra rb =
+        la === ra >~>
+        lb === rb >~>
+        return Refl
 
 type instance Demote Text = Symbol
 type instance Demote Symbol = Text
@@ -109,9 +145,24 @@ instance Single Text where
     fromSingl (SText p) = Text $ symbolVal p
     toSingl t = reifySymbol (tStr t) (\p -> SomeSingl $ SText p)
 type SText (x :: Symbol) = Singl x
+instance EqDec Text where
+    (SText l) === (SText r) = sameSymbol l r
 
--- TODO find better way to get simular effect
-isEq :: SText l -> SText r -> Maybe (l :~: r)
-isEq l r = case fromSingl l == fromSingl r of
-    True -> Just (unsafeCoerce Refl)
-    False -> Nothing
+-- usage:
+-- mktext @"Hello world!"
+mkText :: forall s. KnownSymbol s => SText s
+mkText = SText (Proxy @s)
+
+
+cong :: forall f a b.a :~: b -> f a :~: f b
+cong Refl = Refl
+
+withEq :: (a :~: b) -> (a ~ b => r) ->r
+withEq Refl x = x
+
+withEqM :: Monad m => m (a :~: b) -> (a ~ b => m r) -> m r
+withEqM m x = m >>= \Refl -> x
+
+infixr 1 >~>
+(>~>) :: Monad m => m (a :~: b) -> (a ~ b => m r) -> m r
+(>~>) = withEqM

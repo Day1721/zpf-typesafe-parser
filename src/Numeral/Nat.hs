@@ -7,11 +7,18 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Numeral.Nat where
 
 import Basic.Single
 import Basic.Uninhabited
+
+
+import Unsafe.Coerce
 
 import Prelude
 import Data.Type.Equality
@@ -46,16 +53,12 @@ type family Min (n :: Nat) (m :: Nat) where
     Min n Zero = Zero
     Min (Succ n) (Succ m) = Succ (Min n m)
 
--- Vals (Finite n) ~ [0, n]
+-- Vals (Finite n) ~ [0, n-1] - indices of Vec n
 data Finite (n :: Nat) where
     FZ :: Finite (Succ n)
     FS :: Finite n -> Finite (Succ n)
 
 $(uninhabited [t| Finite Zero |])
-
--- data SNat' (n :: Nat) where
---     SZero' :: SNat' Zero
---     SSucc' :: SNat' n -> SNat' (Succ n)
 
 type instance Demote Nat = Nat
 instance Single Nat where
@@ -67,8 +70,14 @@ instance Single Nat where
     
     toSingl Zero = SomeSingl SZero
     toSingl (Succ n) = n >=> \n' -> SomeSingl (SSucc n')
-
 type SNat n = Singl (n :: Nat)
+
+instance EqDec Nat where
+    SZero === SZero = return Refl
+    SSucc n === SSucc m = 
+        n === m >>= \Refl ->
+        return Refl
+    _ === _ = Nothing
 
 (%+) :: SNat n -> SNat m -> SNat (n + m)
 SZero   %+ m = m
@@ -107,9 +116,9 @@ plusComm :: SNat n -> SNat m -> n + m :~: m + n
 plusComm n SZero = plusZero n
 plusComm n (SSucc m) = trans (plusSuccDist n m) (apply Refl $ plusComm n m)
 
-plusAssos :: SNat n -> SNat m -> SNat r -> (n + m) + r :~: n + (m + r)
-plusAssos SZero _ _ = Refl
-plusAssos (SSucc n) m r = apply Refl $ plusAssos n m r 
+plusAssos :: forall m r n. SNat n -> (n + m) + r :~: n + (m + r)
+plusAssos SZero = Refl
+plusAssos (SSucc n) = apply Refl $ plusAssos @m @r n
 
 -- ENDREGION PROOFS
 

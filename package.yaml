@@ -23,7 +23,9 @@ dependencies:
 - base >= 4.7 && < 5
 - template-haskell >= 2.13 && < 3
 - megaparsec >= 7.0.4 && < 8
+- parser-combinators >= 1.0.1 && < 2
 - reflection >= 2.1.4 && < 3
+- mtl >= 2.2.2 && < 3
 
 library:
   source-dirs: src

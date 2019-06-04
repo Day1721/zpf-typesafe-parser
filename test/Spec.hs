@@ -4,6 +4,7 @@ import Parser
 import Text.Megaparsec
 import Parser
 import TypeChecking.TC
+import Basic.TH
 import System.Exit
 import Str
 

@@ -21,42 +21,50 @@ import Basic.Single
 
 
 
-data ProgType = PInt | PUnit | PFun ProgType ProgType
+infixr :->
+data ProgType = PInt | PUnit | PStr | ProgType :-> ProgType
     deriving (Eq)
 
 instance Show ProgType where
-    show PInt = "Int"
+    show PStr = "string"
+    show PInt = "int"
     show PUnit = "()"
-    show (PFun f t) = show f ++ " -> " ++ show t
+    show (f :-> t) = show f ++ " -> " ++ show t
 
 
 type family LiftProgType t where
     LiftProgType PInt = Int
     LiftProgType PUnit = ()
-    LiftProgType (PFun x y) = LiftProgType x -> LiftProgType y
+    LiftProgType PStr = String
+    LiftProgType (x :-> y) = LiftProgType x -> LiftProgType y
 
 
+infixr :~>
 type instance Demote ProgType = ProgType
 instance Single ProgType where
     data instance Singl (e :: Demote ProgType) where
         SPInt  :: SProgType PInt
         SPUnit :: SProgType PUnit
-        SPFun  :: SProgType a -> SProgType b -> SProgType (PFun a b)
+        SPStr  :: SProgType PStr
+        (:~>)  :: SProgType a -> SProgType b -> SProgType (a :-> b)
     fromSingl SPInt = PInt
     fromSingl SPUnit = PUnit
-    fromSingl (SPFun x y) = PFun (fromSingl x) (fromSingl y)
+    fromSingl SPStr = PStr
+    fromSingl (x :~> y) = fromSingl x :-> fromSingl y
 
     toSingl PInt = SomeSingl SPInt
     toSingl PUnit = SomeSingl SPUnit
-    toSingl (PFun x y) = 
+    toSingl PStr = SomeSingl SPStr
+    toSingl (x :-> y) = 
         x >=> \x ->
         y >=> \y ->
-        SomeSingl (SPFun x y)
+        SomeSingl (x :~> y)
 type SProgType (x :: ProgType) = Singl x
 instance EqDec ProgType where
-    SPInt === SPInt = Just Refl 
+    SPInt  === SPInt  = Just Refl 
     SPUnit === SPUnit = Just Refl 
-    SPFun la lr === SPFun ra rr =
+    SPStr  === SPStr  = Just Refl
+    la :~> lr === ra :~> rr =
         la === ra >~>
         lr === rr >~>
         return Refl

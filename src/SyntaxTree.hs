@@ -4,6 +4,14 @@ module SyntaxTree where
 class Contextual t where
   context :: t a -> a
 
+type Program a = [TopDef a]
+
+data TopDef a =
+      DefLet  (LetDeclaration a) (Expr a)  a
+    | DefData { dataName :: String, dataCons :: [DataCon a] }
+
+type DataCon a = [BType a]
+
 data Literal a =
       LInt    Int     a
     | LDouble Double  a
@@ -16,6 +24,7 @@ data Literal a =
 data BType a =
       TInt  a
     | TUnit a
+    | TStr  a
     | TFun  (BType a) (BType a)  a 
   deriving (Eq, Show, Functor)
 
@@ -42,6 +51,7 @@ instance Contextual Literal where
 instance Contextual BType where
   context (TInt c) = c
   context (TUnit c) = c
+  context (TStr c) = c
   context (TFun _ _ c) = c
 
 instance Contextual Expr where

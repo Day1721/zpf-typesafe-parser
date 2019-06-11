@@ -21,18 +21,21 @@ import Basic.Single
 import Basic.TH
 import TypeChecking.Basic
 import TypeChecking.Ast
+import TypeChecking.StdLib
 import qualified SyntaxTree as ST
 
 toProgType :: ST.BType a -> ProgType
 toProgType (ST.TInt _)     = PInt
 toProgType (ST.TUnit _)    = PUnit
-toProgType (ST.TFun x y _) = PFun (toProgType x) (toProgType y)
-
+toProgType (ST.TStr _)     = PStr
+toProgType (ST.TFun x y _) = toProgType x :-> toProgType y
 
 checker :: ST.Expr a -> Either String (Expr PUnit)
-checker expr = let e = SEnv SNil in runExcept (runChecker e expr) >>= \case
-    SomeExpr SPUnit e -> Right e
-    SomeExpr t e -> Left $ "Invalid type: expected unit, but got " ++ show t
+checker expr = 
+    Env stdLib >=> \e -> 
+    runExcept (runChecker e expr) >>= \case
+        SomeExpr SPUnit e -> Right e
+        SomeExpr t e -> Left $ "Invalid type: expected unit, but got " ++ show t
 
 type family UpdateEnv s t e where
     UpdateEnv s t ('Env v) = 'Env ('(s,t):v)
@@ -59,15 +62,17 @@ runChecker e = \case
                     return $ SomeExpr (getType v w) $ EVar e id w
                 Nothing -> throwError $ "Undefined variable" ++ show id
 
-    ST.ELet decl expr _ -> checkDecl decl e >>= \case
-        SomeSingl e' -> runChecker e' expr
+    ST.ELet decl expr _ -> 
+        checkDecl decl e >>= \case
+            SomeSingl e' -> runChecker e' expr
 
-    ST.EApp fun param _ -> runChecker e fun >>= \(SomeExpr funT funTE) ->
+    ST.EApp fun param _ -> 
+        runChecker e fun >>= \(SomeExpr funT funTE) ->
         runChecker e param >>= \(SomeExpr paramT paramTE) ->
         case funT of 
-            SPFun arg res -> case paramT === arg of
+            arg :~> res -> case paramT === arg of
                 Just Refl -> return $ SomeExpr res (EApp funTE paramTE)
-                Nothing -> throwError $ "Incompatible parameter type\nexpected: " ++ show arg ++ "\ngot:" ++ show paramT
+                Nothing -> throwError $ "Incompatible parameter type\nexpected: " ++ show arg ++ "\ngot:      " ++ show paramT
             _ -> throwError $ "Non-fuctional type in application: " ++ show funT
 
     ST.ELambda x t expr _ -> 
@@ -75,9 +80,11 @@ runChecker e = \case
         toProgType t >=> \t -> 
         let e' = updateEnv x t e in
         runChecker e' expr >>= \(SomeExpr exprT exprTE) ->
-        return $ SomeExpr (SPFun t exprT) $ EAbs x t exprTE
+        return $ SomeExpr (t :~> exprT) $ EAbs x t exprTE
 
 checkLit :: ST.Literal a -> SomeLit
 checkLit = \case
-    ST.LInt i _ -> SomeLit SPInt (LInt i)
+    ST.LUnit     _ -> SomeLit SPUnit  LUnit
+    ST.LInt    i _ -> SomeLit SPInt  (LInt i)
+    ST.LString s _ -> SomeLit SPStr  (LStr s)
     _ -> unimplemented

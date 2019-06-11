@@ -75,6 +75,9 @@ infix 4 ===
 class Single k => EqDec k where
     (===) :: Singl (l :: Demote k) -> Singl (r :: Demote k) -> Maybe (l :~: r)
 
+instance EqDec k => TestEquality (Singl :: Demote k -> Type) where
+    testEquality l r = l === r
+
 -- when using a RebindableSyntax for 'do' block, you can just define a top-level (>>=) operator
 -- to behave like (>=>) with the same type, so you wouldn't write 'where' part every time
 -- (then if you want to use 'do' with the monad, just add "where (>>=) = Prelude.(>>=)")

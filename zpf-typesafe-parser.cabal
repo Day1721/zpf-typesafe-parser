@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 75916ce92540a0f08c0e37bfb9cb0c91b40ac198d97477f65c4db42aadbb3e04
+-- hash: 95d07f8894f72539ef4de295075d721dba9c8d250f3d7c89cbf17daaeab64908
 
 name:           zpf-typesafe-parser
 version:        0.1.0.0
@@ -35,6 +35,7 @@ library
       SyntaxTree
       TypeChecking.Ast
       TypeChecking.Basic
+      TypeChecking.StdLib
       TypeChecking.TC
   other-modules:
       Paths_zpf_typesafe_parser
@@ -71,6 +72,7 @@ test-suite zpf-typesafe-parser-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Str
       Paths_zpf_typesafe_parser
   hs-source-dirs:
       test

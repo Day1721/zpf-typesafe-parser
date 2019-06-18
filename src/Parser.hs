@@ -129,7 +129,7 @@ pBType = makeExprParser typeTerm typeOpers where
         <|> withPosition (TUnit <$ symbol "unit")
         <|> withPosition (TInt  <$ symbol "int")
         <|> withPosition (TStr  <$ symbol "string")
-    typeOpers = [[InfixR funPars]]
+    typeOpers = [[InfixR (symbol "->" >> funPars)]]
     funPars = withPosition $ return $ \p x y -> TFun x y p
 
 pLInt = LInt <$> integer

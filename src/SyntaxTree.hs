@@ -29,6 +29,7 @@ data BType a =
     | TStr  a
     | TData String a
     | TFun  (BType a) (BType a)  a 
+    | TData String    a
   deriving (Eq, Show, Functor)
 
 data Expr a =
@@ -64,6 +65,7 @@ instance Contextual BType where
   context (TStr c) = c
   context (TData _ c) = c
   context (TFun _ _ c) = c
+  context (TData _ c) = c
 
 instance Contextual Expr where
   context (ELit _ c) = c

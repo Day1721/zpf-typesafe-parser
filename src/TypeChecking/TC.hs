@@ -24,17 +24,18 @@ import TypeChecking.Ast
 import TypeChecking.StdLib
 import qualified SyntaxTree as ST
 
-toProgType :: ST.BType a -> (ProgType Text)
+toProgType :: ST.BType a -> VProgType
 toProgType (ST.TInt _)     = PInt
 toProgType (ST.TUnit _)    = PUnit
 toProgType (ST.TStr _)     = PStr
 toProgType (ST.TData s _)  = PData (Text s)
 toProgType (ST.TFun x y _) = toProgType x :-> toProgType y
+toProgType (ST.TData s _)  = PData (Text s)
 
 checker :: ST.Expr a -> Either String (Expr PUnit)
 checker expr = 
     Env stdLib >=> \e -> 
-    runExcept (runChecker e expr) >>= \case
+    runExcept (checkExpr e expr) >>= \case
         SomeExpr SPUnit e -> Right e
         SomeExpr t e -> Left $ "Invalid type: expected unit, but got " ++ show t
 
@@ -44,14 +45,23 @@ type family UpdateEnv s t e where
 updateEnv :: SText s -> SProgType t -> SEnvT e -> SEnvT (UpdateEnv s t e)
 updateEnv s t (SEnv v) = SEnv $ SCons (SPair s t) v
 
+runChecker :: SEnv e -> [ST.TopDef a] -> Either String [TopDef]
+runChecker _ [] = return []
+runChecker e (h:t) = checkTopDef e h >>= \(td, SomeSingl e') ->
+    runChecker e' t >>= \tds ->
+    return (td:tds)
+
+checkTopDef :: SEnv e -> ST.TopDef a -> Either String (TopDef, SomeSingl (Env Text))
+checkTopDef = undefined
+
 checkDecl :: ST.LetDeclaration a -> SEnvT e -> Except String (SomeSingl (Env Text), SomeExpr)
 checkDecl (ST.DLet id expr _) env = 
-    runChecker env expr >>= \(SomeExpr exprT exprTE) ->
+    checkExpr env expr >>= \(SomeExpr exprT exprTE) ->
     Text id >=> \id ->
     return (SomeSingl (updateEnv id exprT env), SomeExpr exprT exprTE)
 
-runChecker :: SEnvT e -> ST.Expr a -> Except String SomeExpr
-runChecker e = \case
+checkExpr :: SEnvT e -> ST.Expr a -> Except String SomeExpr
+checkExpr e = \case
     ST.ELit l _ -> case checkLit l of
         SomeLit t e -> return $ SomeExpr t $ ELit e
         
@@ -66,12 +76,12 @@ runChecker e = \case
     ST.ELet decl@(ST.DLet ident _ _) expr _ -> 
         checkDecl decl e >>= \case
             (SomeSingl e', SomeExpr leT le) -> 
-                runChecker e' expr >>= \(SomeExpr e'T e'TE) ->
+                checkExpr e' expr >>= \(SomeExpr e'T e'TE) ->
                 return $ SomeExpr e'T $ ELet (LetDecl (Text ident) le) e'TE 
 
     ST.EApp fun param _ -> 
-        runChecker e fun >>= \(SomeExpr funT funTE) ->
-        runChecker e param >>= \(SomeExpr paramT paramTE) ->
+        checkExpr e fun >>= \(SomeExpr funT funTE) ->
+        checkExpr e param >>= \(SomeExpr paramT paramTE) ->
         case funT of 
             arg :~> res -> case paramT === arg of
                 Just Refl -> return $ SomeExpr res (EApp funTE paramTE)
@@ -82,7 +92,7 @@ runChecker e = \case
         Text x >=> \x -> 
         toProgType t >=> \t -> 
         let e' = updateEnv x t e in
-        runChecker e' expr >>= \(SomeExpr exprT exprTE) ->
+        checkExpr e' expr >>= \(SomeExpr exprT exprTE) ->
         return $ SomeExpr (t :~> exprT) $ EAbs x t exprTE
 
 checkLit :: ST.Literal a -> SomeLit

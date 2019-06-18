@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 95d07f8894f72539ef4de295075d721dba9c8d250f3d7c89cbf17daaeab64908
+-- hash: 955470fe44a68f71f24b74e07b2c4adbd01e063314f576d188c21438da07ed80
 
 name:           zpf-typesafe-parser
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Basic.Single
+      Basic.SingleInstances
       Basic.TH
       Basic.Uninhabited
       Numeral.Nat

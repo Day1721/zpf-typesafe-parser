@@ -11,19 +11,24 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module TypeChecking.Basic where
 
 import Data.Type.Equality
 import GHC.TypeLits hiding (Text)
 import Basic.Single
-
+import Data.Kind
 
 
 
 infixr :->
-data ProgType s = PInt | PUnit | PStr | PData s | ProgType s :-> ProgType s
+data ProgType str = PInt | PUnit | PStr | ProgType str :-> ProgType str | PData str
     deriving (Eq)
+
+type VProgType = ProgType Text
+type TProgType = ProgType Symbol
 
 instance Show s => Show (ProgType s) where
     show PStr = "string"
@@ -31,6 +36,7 @@ instance Show s => Show (ProgType s) where
     show PUnit = "()"
     show (PData name) = show name
     show (f :-> t) = show f ++ " -> " ++ show t
+    show (PData name) = show name
 
 
 type family LiftProgType t where
@@ -41,19 +47,21 @@ type family LiftProgType t where
 
 
 infixr :~>
-type instance Demote (ProgType s) = ProgType (Demote s)
+type instance Demote (ProgType str) = ProgType (Demote str)
 instance Single s => Single (ProgType s) where
-    data instance Singl (e :: Demote (ProgType s)) where
+    data instance Singl :: Demote (ProgType s) -> Type where
         SPInt  :: SProgType PInt
         SPUnit :: SProgType PUnit
         SPStr  :: SProgType PStr
         SPData :: Singl a -> SProgType (PData a)
         (:~>)  :: SProgType a -> SProgType b -> SProgType (a :-> b)
+        SPData :: Singl s -> SProgType (PData s)
     fromSingl SPInt = PInt
     fromSingl SPUnit = PUnit
     fromSingl SPStr = PStr
     fromSingl (SPData t) = PData (fromSingl t)
     fromSingl (x :~> y) = fromSingl x :-> fromSingl y
+    fromSingl (SPData t) = PData (fromSingl t)
 
     toSingl PInt = SomeSingl SPInt
     toSingl PUnit = SomeSingl SPUnit
@@ -65,7 +73,10 @@ instance Single s => Single (ProgType s) where
         x >=> \x ->
         y >=> \y ->
         SomeSingl (x :~> y)
-type SProgType (x :: Demote (ProgType s)) = Singl x
+    toSingl (PData t) = 
+        t >=> \t -> 
+        SomeSingl $ SPData t
+type SProgType (x :: ProgType (Demote s)) = Singl x
 instance EqDec s => EqDec (ProgType s) where
     SPInt  === SPInt  = Just Refl 
     SPUnit === SPUnit = Just Refl 
@@ -92,7 +103,7 @@ eVars (Env v) = v
 type instance Demote (Env s) = Env (Demote s)
 instance Single s => Single (Env s) where
     data instance Singl (e :: Demote (Env s)) where
-        SEnv :: SList (l :: [(Demote s, Demote (ProgType s))]) -> SEnv ('Env l)
+        SEnv :: SList (l :: [Demote (s, ProgType s)]) -> SEnv ('Env l)
     fromSingl (SEnv sl) = Env (fromSingl sl)
     toSingl (Env sl) = 
         sl >=> \sl ->

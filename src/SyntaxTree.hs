@@ -5,7 +5,6 @@ class Contextual t where
   context :: t a -> a
 
 type Program a = [TopDef a]
-  deriving (Eq, Show, Functor)
 
 data TopDef a =
       DefLet  (LetDeclaration a)  a
@@ -43,6 +42,13 @@ data Expr a =
 data LetDeclaration a =
       DLet    String (Expr a) a
   deriving (Eq, Show, Functor)
+
+instance Contextual TopDef where
+  context (DefLet _ c) = c
+  context (DefData _ _ c) = c
+
+instance Contextual DataCon where
+  context (DataCon _ _ c) = c
 
 instance Contextual Literal where
   context (LInt _ c) = c

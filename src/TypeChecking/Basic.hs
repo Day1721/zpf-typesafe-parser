@@ -22,13 +22,14 @@ import Basic.Single
 
 
 infixr :->
-data ProgType = PInt | PUnit | PStr | ProgType :-> ProgType
+data ProgType s = PInt | PUnit | PStr | PData s | ProgType s :-> ProgType s
     deriving (Eq)
 
-instance Show ProgType where
+instance Show s => Show (ProgType s) where
     show PStr = "string"
     show PInt = "int"
     show PUnit = "()"
+    show (PData name) = show name
     show (f :-> t) = show f ++ " -> " ++ show t
 
 
@@ -40,30 +41,38 @@ type family LiftProgType t where
 
 
 infixr :~>
-type instance Demote ProgType = ProgType
-instance Single ProgType where
-    data instance Singl (e :: Demote ProgType) where
+type instance Demote (ProgType s) = ProgType (Demote s)
+instance Single s => Single (ProgType s) where
+    data instance Singl (e :: Demote (ProgType s)) where
         SPInt  :: SProgType PInt
         SPUnit :: SProgType PUnit
         SPStr  :: SProgType PStr
+        SPData :: Singl a -> SProgType (PData a)
         (:~>)  :: SProgType a -> SProgType b -> SProgType (a :-> b)
     fromSingl SPInt = PInt
     fromSingl SPUnit = PUnit
     fromSingl SPStr = PStr
+    fromSingl (SPData t) = PData (fromSingl t)
     fromSingl (x :~> y) = fromSingl x :-> fromSingl y
 
     toSingl PInt = SomeSingl SPInt
     toSingl PUnit = SomeSingl SPUnit
     toSingl PStr = SomeSingl SPStr
+    toSingl (PData t) = 
+        t >=> \t ->
+        SomeSingl (SPData t)
     toSingl (x :-> y) = 
         x >=> \x ->
         y >=> \y ->
         SomeSingl (x :~> y)
-type SProgType (x :: ProgType) = Singl x
-instance EqDec ProgType where
+type SProgType (x :: Demote (ProgType s)) = Singl x
+instance EqDec s => EqDec (ProgType s) where
     SPInt  === SPInt  = Just Refl 
     SPUnit === SPUnit = Just Refl 
     SPStr  === SPStr  = Just Refl
+    SPData tl === SPData tr =
+        tl === tr >~>
+        return Refl
     la :~> lr === ra :~> rr =
         la === ra >~>
         lr === rr >~>
@@ -75,7 +84,7 @@ instance EqDec ProgType where
 
 -- environment type
 -- s is essentially string, so 'Text' on term level and 'Symbol' on type level
-type Vars s = [(s, ProgType)]
+type Vars s = [(s, ProgType s)]
 data Env s = Env (Vars s)
 
 eVars (Env v) = v 
@@ -83,7 +92,7 @@ eVars (Env v) = v
 type instance Demote (Env s) = Env (Demote s)
 instance Single s => Single (Env s) where
     data instance Singl (e :: Demote (Env s)) where
-        SEnv :: SList (l :: [(Demote s, ProgType)]) -> SEnv ('Env l)
+        SEnv :: SList (l :: [(Demote s, Demote (ProgType s))]) -> SEnv ('Env l)
     fromSingl (SEnv sl) = Env (fromSingl sl)
     toSingl (Env sl) = 
         sl >=> \sl ->

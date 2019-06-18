@@ -24,10 +24,11 @@ import TypeChecking.Ast
 import TypeChecking.StdLib
 import qualified SyntaxTree as ST
 
-toProgType :: ST.BType a -> ProgType
+toProgType :: ST.BType a -> (ProgType Text)
 toProgType (ST.TInt _)     = PInt
 toProgType (ST.TUnit _)    = PUnit
 toProgType (ST.TStr _)     = PStr
+toProgType (ST.TData s _)  = PData (Text s)
 toProgType (ST.TFun x y _) = toProgType x :-> toProgType y
 
 checker :: ST.Expr a -> Either String (Expr PUnit)

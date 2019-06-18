@@ -83,19 +83,6 @@ hreverse :: HList l -> HList (Reverse l)
 hreverse HNil = HNil
 hreverse (h :>: t) = (hreverse t) <++> (h :>: HNil)
 
-(<!!>) :: HList (h:t) -> SNat n -> (h:t) !! n
-(<!!>) (x :>: xs) SZero = x
-(<!!>) (x :>: y :>: ys) (SSucc n) = (y :>: ys) <!!> n
-
-htake :: SNat n -> HList l -> HList (Take n l) 
-htake SZero _ = HNil
-htake (SSucc n) (h :>: t) = h :>: htake n t 
-
-hskip :: SNat n -> HList l -> HList (Skip n l)
-hskip SZero l = l
-hskip (SSucc n) (_ :>: t) = hskip n t 
--- TODO (\\) :: Eq a => [a] -> [a] -> [a] <- set diff operator
-
 hfoldl :: (forall a. b -> a -> b) -> b -> HList l -> b
 hfoldl _ acc HNil = acc
 hfoldl f acc (h :>: t) = hfoldl f (f acc h) t

@@ -33,28 +33,28 @@ toProgType (ST.TFun x y _) = toProgType x :-> toProgType y
 
 checker :: ST.Expr ST.Position -> Either String (Expr PUnit)
 checker expr = 
-    Env stdLib >=> \e -> 
+    Env stdLib [] >=> \e -> 
     runExcept (checkExpr e expr) >>= \case
         SomeExpr SPUnit e -> Right e
         SomeExpr t e -> Left $ "Invalid type: expected unit, but got " ++ show t
 
 type family UpdateEnv s t e where
-    UpdateEnv s t ('Env v) = 'Env ('(s,t):v)
+    UpdateEnv s t ('Env v d) = 'Env ('(s,t):v) d
 
 updateEnv :: SText s -> SProgType t -> SEnvT e -> SEnvT (UpdateEnv s t e)
-updateEnv s t (SEnv v) = SEnv $ SCons (SPair s t) v
+updateEnv s t (SEnv v d) = SEnv (SCons (SPair s t) v) d
 
-runChecker :: ST.Program ST.Position -> Either String [TopDef]
-runChecker (ST.Program l) = Env stdLib >=> \e -> 
+runChecker :: ST.Program ST.Position -> Either String [TopDef Text]
+runChecker (ST.Program l) = Env stdLib [] >=> \e -> 
     runExcept $ checkTopDefs e l
 
-checkTopDefs :: SEnvT e -> [ST.TopDef ST.Position] -> Except String [TopDef]
+checkTopDefs :: SEnvT e -> [ST.TopDef ST.Position] -> Except String [TopDef Text]
 checkTopDefs _ [] = return []
 checkTopDefs e (h:t) = checkTopDef e h >>= \(td, SomeSingl e') ->
     checkTopDefs e' t >>= \tds ->
     return (td:tds)
 
-checkTopDef :: SEnvT e -> ST.TopDef ST.Position -> Except String (TopDef, SomeSingl (Env Text))
+checkTopDef :: SEnvT e -> ST.TopDef ST.Position -> Except String (TopDef Text, SomeSingl (Env Text))
 checkTopDef e (ST.DefLet ld@(ST.DLet ident _ _) _) = 
     checkDecl e ld >>= \(e', SomeExpr eT eTE) -> 
     return (DefLet $ LetDecl (Text ident) eTE, e')
@@ -74,7 +74,7 @@ checkExpr e = \case
     ST.EVar id p -> 
         Text id >=> \id -> 
         case e of 
-            SEnv v -> case findType id v of
+            SEnv v _ -> case findType id v of
                 Just w -> w >=> \w -> 
                     return $ SomeExpr (getType v w) $ EVar e id w
                 Nothing -> throwError $ "Undefined variable" ++ show id ++ "at: " ++ show p

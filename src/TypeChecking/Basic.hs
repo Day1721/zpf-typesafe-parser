@@ -92,23 +92,27 @@ instance EqDec s => EqDec (ProgType s) where
 -- environment type
 -- s is essentially string, so 'Text' on term level and 'Symbol' on type level
 type Vars s = [(s, ProgType s)]
-data Env s = Env (Vars s)
+type Datas s = [(s, [DataCon s])]
+data Env s = Env (Vars s) (Datas s)
 
-eVars (Env v) = v 
+eVars  (Env v _) = v 
+eDatas (Env _ d) = d
 
 type instance Demote (Env s) = Env (Demote s)
 instance Single s => Single (Env s) where
     data instance Singl (e :: Demote (Env s)) where
-        SEnv :: SList (l :: [Demote (s, ProgType s)]) -> SEnv ('Env l)
-    fromSingl (SEnv sl) = Env (fromSingl sl)
-    toSingl (Env sl) = 
-        sl >=> \sl ->
-        SomeSingl $ SEnv sl
+        SEnv :: SList (v :: [Demote (s, ProgType s)]) -> SList (d :: [Demote (s, [DataCon s])]) -> SEnv ('Env v d)
+    fromSingl (SEnv v d) = Env (fromSingl v) (fromSingl d)
+    toSingl (Env v d) = 
+        v >=> \v ->
+        d >=> \d ->
+        SomeSingl $ SEnv v d
 type SEnv (e :: Demote (Env s)) = Singl e
 type SEnvT (e :: Demote (Env Text)) = SEnv e
 instance EqDec s => EqDec (Env s) where
-    SEnv l === SEnv r = 
-        l === r >~>
+    SEnv lv ld === SEnv rv rd = 
+        lv === rv >~>
+        ld === rd >~>
         return Refl
 
 
@@ -140,7 +144,9 @@ instance EqDec (VarWitness l s) where
     _ === _ = Nothing
 
 type family EVars (e :: Env Symbol) where
-    EVars ('Env v) = v
+    EVars ('Env v _) = v
+type family EDatas (e :: Env Symbol) where
+    EDatas ('Env _ d) = d
 
 type family GetType (s :: Symbol) (v :: Vars Symbol) (x :: VarWitness v s) where
     GetType s ('(s, st):t) Here = st
@@ -159,3 +165,23 @@ getType :: SList l -> SVarWitness w -> SProgType (GetType s l w)
 getType (SCons (SPair _ t) _) SHere = t
 getType (SCons (SPair _ _) ids) (SThere w) = getType ids w
 getType SNil w = case w of
+
+
+data DataCon s = DataCon s [ProgType s] 
+
+-- $(deriveDemote ''DataCon)
+type instance Demote (DataCon s) = DataCon (Demote s)
+instance (Single s) => Single (DataCon s) where
+    data instance Singl (dc :: Demote (DataCon s)) where
+        SDataCon :: Singl (str :: Demote s) -> SList l -> SDataCon ('DataCon str l)
+    fromSingl (SDataCon str l) = DataCon (fromSingl str) (fromSingl l)
+    toSingl (DataCon str l) = 
+        str >=> \str ->
+        l >=> \l ->
+        SomeSingl $ SDataCon str l
+type SDataCon (e :: Demote (DataCon s)) = Singl e
+instance EqDec s => EqDec (DataCon s) where
+    SDataCon ls ll === SDataCon rs rl =
+        ls === rs >~>
+        ll === rl >~>
+        return Refl

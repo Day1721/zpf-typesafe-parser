@@ -2,12 +2,19 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module TypeChecking.Ast where
 
 import Data.Kind
 import Basic.Single
+import Basic.TH
+import Basic.SingleInstances
 import TypeChecking.Basic
+import Language.Haskell.TH hiding (Type, Lit)
 
 data Lit :: TProgType -> Type where
     LUnit ::           Lit PUnit
@@ -28,9 +35,7 @@ data SomeExpr where
 data LetDecl :: TProgType -> Type where
     LetDecl :: Text -> Expr t -> LetDecl t
 
-data DataCon :: Type where
-    DataCon :: Text -> [VProgType] -> DataCon
 
-data TopDef :: Type where
-    DefLet  :: LetDecl t -> TopDef
-    DefData :: Text -> [DataCon] -> TopDef
+data TopDef s :: Type where
+    DefLet  :: LetDecl t -> TopDef s
+    DefData :: Text -> [DataCon s] -> TopDef s

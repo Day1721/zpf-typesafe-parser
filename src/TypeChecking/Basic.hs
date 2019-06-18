@@ -73,6 +73,7 @@ instance Single s => Single (ProgType s) where
         y >=> \y ->
         SomeSingl (x :~> y)
 type SProgType (x :: ProgType (Demote s)) = Singl x
+type SProgTypeT (x :: ProgType (Demote Text)) = Singl x
 instance EqDec s => EqDec (ProgType s) where
     SPInt  === SPInt  = Just Refl 
     SPUnit === SPUnit = Just Refl 

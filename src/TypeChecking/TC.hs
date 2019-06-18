@@ -101,8 +101,39 @@ checkExpr e = \case
         checkExpr e' expr >>= \(SomeExpr exprT exprTE) ->
         return $ SomeExpr (t :~> exprT) $ EAbs x t exprTE
 
-    ST.EMatch _ _ _ -> unimplemented
+    ST.EMatch exp alts _ ->
+        checkExpr e exp >>= \(SomeExpr te exp) ->
+        mapM (checkAlt e te) alts >>= \salts@(SomeAlt tp u a : _) ->
+        case te === tp of
+            Nothing -> fail "Something went wrong"
+            Just Refl ->
+                let l = getAlts tp u salts in
+                return $ SomeExpr u (EMatch exp l)
+
+  where
+    getAlts :: SProgTypeT t -> SProgType u -> [SomeAlt] -> [Alt t u]
+    getAlts t u [] = []
+    getAlts t u (SomeAlt p e h:ts) = 
+        case t === p of
+            Nothing -> undefined
+            Just Refl -> case u === e of
+                            Nothing -> undefined
+                            Just Refl -> h : getAlts p e ts
     
+checkAlt :: SEnvT e -> SProgTypeT t -> ST.Alt ST.Position -> Except String SomeAlt
+checkAlt e t (ST.Alt p exp _) =
+    checkExpr e exp >>= \(SomeExpr t2 exp) ->
+    checkPattern e t p >>= \(SomePat t3 p) ->
+    case t === t3 of
+        Nothing -> fail "Incompatible type of pattern" --TODO position
+        Just Refl -> return $ SomeAlt t t2 (Alt p exp)
+
+checkPattern :: SEnvT e -> SProgTypeT t -> ST.Pattern ST.Position -> Except String SomePat
+checkPattern e tsuggestion (ST.PVar name _) = return (SomePat tsuggestion (PVar tsuggestion (Text name)))
+checkPattern e _ (ST.PLit l _) = case checkLit l of
+                                    SomeLit t l -> return (SomePat t (PLit l))
+checkPattern e _ (ST.PCon name ps _) = undefined
+
 checkLit :: ST.Literal a -> SomeLit
 checkLit = \case
     ST.LUnit     _ -> SomeLit SPUnit  LUnit

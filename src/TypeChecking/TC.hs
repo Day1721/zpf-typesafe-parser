@@ -30,7 +30,6 @@ toProgType (ST.TUnit _)    = PUnit
 toProgType (ST.TStr _)     = PStr
 toProgType (ST.TData s _)  = PData (Text s)
 toProgType (ST.TFun x y _) = toProgType x :-> toProgType y
-toProgType (ST.TData s _)  = PData (Text s)
 
 checker :: ST.Expr a -> Either String (Expr PUnit)
 checker expr = 

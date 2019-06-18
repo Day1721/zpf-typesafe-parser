@@ -36,7 +36,6 @@ instance Show s => Show (ProgType s) where
     show PUnit = "()"
     show (PData name) = show name
     show (f :-> t) = show f ++ " -> " ++ show t
-    show (PData name) = show name
 
 
 type family LiftProgType t where
@@ -53,15 +52,13 @@ instance Single s => Single (ProgType s) where
         SPInt  :: SProgType PInt
         SPUnit :: SProgType PUnit
         SPStr  :: SProgType PStr
-        SPData :: Singl a -> SProgType (PData a)
-        (:~>)  :: SProgType a -> SProgType b -> SProgType (a :-> b)
         SPData :: Singl s -> SProgType (PData s)
+        (:~>)  :: SProgType a -> SProgType b -> SProgType (a :-> b)
     fromSingl SPInt = PInt
     fromSingl SPUnit = PUnit
     fromSingl SPStr = PStr
     fromSingl (SPData t) = PData (fromSingl t)
     fromSingl (x :~> y) = fromSingl x :-> fromSingl y
-    fromSingl (SPData t) = PData (fromSingl t)
 
     toSingl PInt = SomeSingl SPInt
     toSingl PUnit = SomeSingl SPUnit
@@ -73,9 +70,6 @@ instance Single s => Single (ProgType s) where
         x >=> \x ->
         y >=> \y ->
         SomeSingl (x :~> y)
-    toSingl (PData t) = 
-        t >=> \t -> 
-        SomeSingl $ SPData t
 type SProgType (x :: ProgType (Demote s)) = Singl x
 instance EqDec s => EqDec (ProgType s) where
     SPInt  === SPInt  = Just Refl 

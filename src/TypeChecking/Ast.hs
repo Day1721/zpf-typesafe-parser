@@ -9,14 +9,14 @@ import Data.Kind
 import Basic.Single
 import TypeChecking.Basic
 
-data Lit :: ProgType -> Type where
+data Lit :: TProgType -> Type where
     LUnit ::           Lit PUnit
     LInt  :: Int    -> Lit PInt
     LStr  :: String -> Lit PStr
 data SomeLit where
     SomeLit :: SProgType t -> Lit t -> SomeLit
 
-data Expr :: ProgType -> Type where
+data Expr :: TProgType -> Type where
     ELit :: Lit a -> Expr a
     EVar :: SEnvT e -> SText s -> SVarWitness w -> Expr (GetType s (EVars e) w)
     EApp :: Expr (a :-> b) -> Expr a -> Expr b
@@ -25,11 +25,11 @@ data Expr :: ProgType -> Type where
 data SomeExpr where
     SomeExpr :: SProgType t -> Expr t -> SomeExpr
 
-data LetDecl :: ProgType -> Type where
+data LetDecl :: TProgType -> Type where
     LetDecl :: Text -> Expr t -> LetDecl t
 
 data DataCon :: Type where
-    DataCon :: Text -> [ProgType] -> DataCon
+    DataCon :: Text -> [VProgType] -> DataCon
 
 data TopDef :: Type where
     TDLet  :: LetDecl t -> TopDef

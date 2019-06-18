@@ -88,27 +88,6 @@ class Single a => KnownSingle (x :: Demote a) where
 -- (then if you want to use 'do' with the monad, just add "where (>>=) = Prelude.(>>=)")
 
 -- TODO generation
-type instance Demote Bool = Bool
-instance Single Bool where
-    data instance Singl (b :: Bool) where
-        STrue :: SBool True
-        SFalse :: SBool False
-    fromSingl STrue = True
-    fromSingl SFalse = False
-    
-    toSingl True = SomeSingl STrue
-    toSingl False = SomeSingl SFalse
-type SBool b = Singl (b :: Bool)
-instance EqDec Bool where
-    STrue === STrue = return Refl
-    SFalse === SFalse = return Refl
-    _ === _ = Nothing
-
-instance KnownSingle True where
-    getSingl = STrue
-instance KnownSingle False where
-    getSingl = SFalse
-
 
 type instance Demote [a] = [Demote a]
 instance Single a => Single [a] where

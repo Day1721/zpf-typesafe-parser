@@ -26,6 +26,7 @@ data BType a =
     | TUnit a
     | TStr  a
     | TFun  (BType a) (BType a)  a 
+    | TData String    a
   deriving (Eq, Show, Functor)
 
 data Expr a =
@@ -53,6 +54,7 @@ instance Contextual BType where
   context (TUnit c) = c
   context (TStr c) = c
   context (TFun _ _ c) = c
+  context (TData _ c) = c
 
 instance Contextual Expr where
   context (ELit _ c) = c

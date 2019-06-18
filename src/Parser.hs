@@ -21,8 +21,8 @@ formatError :: ParseErrorBundle String FancyErr -> String
 formatError = errorBundlePretty
 
 
-runParsing :: String -> String -> Either String (Expr SourcePos)
-runParsing name code = case runParser (pProg :: CtxParser Expr) name code of
+runParsing :: String -> String -> Either String (Program SourcePos)
+runParsing name code = case runParser pProg name code of
     Left err -> Left $ formatError err
     Right ast -> Right ast
 
@@ -170,5 +170,5 @@ pLString = LString <$> (char '\"' >> manyTill L.charLiteral (char '\"'))
 pLUnit = symbol "()" >> return LUnit
 pLBool = LBool <$> try ((reserved "true" >> return True) <|> (reserved "false" >> return False))
 
-pProg :: CtxParser Expr
-pProg = between spaceConsumer eof pExpr
+pProg :: CtxParser Program
+pProg = between spaceConsumer eof (Program <$> many1 pTopDef)

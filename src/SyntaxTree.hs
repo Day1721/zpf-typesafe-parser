@@ -1,13 +1,18 @@
 {-# LANGUAGE GADTs, DeriveFunctor #-}
 module SyntaxTree where
 
+import Text.Megaparsec
+
+type Position = SourcePos
+
 class Contextual t where
   context :: t a -> a
 
-type Program a = [TopDef a]
+newtype Program a = Program [TopDef a]
+  deriving (Eq, Show, Functor)
 
 data TopDef a =
-      DefLet  (LetDeclaration a)  a
+      DefLet  (LetDeclaration a) a
     | DefData String [DataCon a] a
   deriving (Eq, Show, Functor)
 

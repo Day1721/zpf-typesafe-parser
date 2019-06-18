@@ -1,4 +1,12 @@
-{-# LANGUAGE GADTs, TemplateHaskell, KindSignatures, TypeFamilies, DataKinds, TypeFamilyDependencies, FlexibleInstances, PolyKinds, QuasiQuotes #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 import Parser
 import Text.Megaparsec
@@ -7,6 +15,7 @@ import TypeChecking.TC
 import Basic.TH
 import Basic.Single
 import System.Exit
+import Basic.SingleInstances
 import Str
 
 data List a = Nila | Consa a (List a)
@@ -27,21 +36,20 @@ test3 = toSingl test2
 -- TODO add some tests
 shouldPass :: [(String, String)]
 shouldPass =
-    ("just unit"    , "()") :
-    ("simple let"   , "let x = 42 in ()") :
-    ("build-in use" , [str|print_endline "Hello World!"|]) :
-    ("local id use" , "let x = () in x") :
-    ("strange name" , "let _qazwsx_dx'98 = () in _qazwsx_dx'98") :
-    ("lambda"       , "let x = fun (y: unit) -> y in x ()") :
+    ("just unit"    , "let tst = ()") :
+    ("simple let"   , "let tst = let x = 42 in ()") :
+    ("build-in use" , [str|let tst = print_endline "Hello World!"|]) :
+    ("local id use" , "let tst = let x = () in x") :
+    ("strange name" , "let tst = let _qazwsx_dx'98 = () in _qazwsx_dx'98") :
+    ("lambda"       , "let tst = let x = fun (y: unit) -> y in x ()") :
     []
 
 data Phase = PParser | PTypeChecker
 
 shouldn'tPass :: [(String, Phase, String)]
 shouldn'tPass =
-    ("inval parameter", PTypeChecker, "print_endline ()") :
-    ("inval ret type" , PTypeChecker, "42") :
-    ("undefined ident", PTypeChecker, [str|putStrLn "Hello World!"|]) :
+    ("inval parameter", PTypeChecker, "let tst = print_endline ()") :
+    ("undefined ident", PTypeChecker, [str|let tst = putStrLn "Hello World!"|]) :
     []
 
 oneFail :: String -> Phase -> String -> IO ()
@@ -50,14 +58,14 @@ oneFail name PParser code = case runParsing name code of
     Right _ -> putStrLn ("Should fail in Parser, but haven't: " ++ name) >> exitWith (ExitFailure 4)
 oneFail name PTypeChecker code = case runParsing name code of
     Left err -> putStrLn err >> exitWith (ExitFailure 2)
-    Right ast -> case checker ast of
+    Right ast -> case runChecker ast of
         Left err -> return ()
         Right _ -> putStrLn ("Should fail in TC, but haven't: " ++ name) >> exitWith (ExitFailure 5)
 
 onePass :: String -> String -> IO ()
 onePass name code = case runParsing name code of
     Left err -> putStrLn err >> exitWith (ExitFailure 2)
-    Right ast -> case checker ast of
+    Right ast -> case runChecker ast of
         Left err -> putStrLn err >> exitWith (ExitFailure 3)
         Right _ -> return ()
 

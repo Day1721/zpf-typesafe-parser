@@ -2,13 +2,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE PolyKinds #-}
 
 module TypeChecking.Ast where
 
 import Data.Kind
 import Basic.Single
-import GHC.TypeLits
 import TypeChecking.Basic
 
 data Lit :: TProgType -> Type where
@@ -34,5 +32,5 @@ data DataCon :: Type where
     DataCon :: Text -> [VProgType] -> DataCon
 
 data TopDef :: Type where
-    TDLet  :: LetDecl t -> TopDef
-    TDData :: Text -> [DataCon] -> TopDef
+    DefLet  :: LetDecl t -> TopDef
+    DefData :: Text -> [DataCon] -> TopDef

@@ -13,12 +13,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module TypeChecking.Basic where
 
 import Data.Type.Equality
 import GHC.TypeLits hiding (Text)
 import Basic.Single
+import Basic.TH
 import Data.Kind
 
 

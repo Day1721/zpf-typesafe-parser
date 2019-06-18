@@ -18,7 +18,7 @@
 -}
 module HList where
 
-import Nat
+import Numeral.Nat
 import Data.Kind
 
 infixr 5 :>:

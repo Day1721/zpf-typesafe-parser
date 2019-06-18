@@ -43,11 +43,11 @@ type family UpdateEnv s t e where
 updateEnv :: SText s -> SProgType t -> SEnvT e -> SEnvT (UpdateEnv s t e)
 updateEnv s t (SEnv v) = SEnv $ SCons (SPair s t) v
 
-checkDecl :: ST.LetDeclaration a -> SEnvT e -> Except String (SomeSingl (Env Text))
+checkDecl :: ST.LetDeclaration a -> SEnvT e -> Except String (SomeSingl (Env Text), SomeExpr)
 checkDecl (ST.DLet id expr _) env = 
     runChecker env expr >>= \(SomeExpr exprT exprTE) ->
     Text id >=> \id ->
-    return $ SomeSingl $ updateEnv id exprT env
+    return (SomeSingl (updateEnv id exprT env), SomeExpr exprT exprTE)
 
 runChecker :: SEnvT e -> ST.Expr a -> Except String SomeExpr
 runChecker e = \case
@@ -62,9 +62,11 @@ runChecker e = \case
                     return $ SomeExpr (getType v w) $ EVar e id w
                 Nothing -> throwError $ "Undefined variable" ++ show id
 
-    ST.ELet decl expr _ -> 
+    ST.ELet decl@(ST.DLet ident _ _) expr _ -> 
         checkDecl decl e >>= \case
-            SomeSingl e' -> runChecker e' expr
+            (SomeSingl e', SomeExpr leT le) -> 
+                runChecker e' expr >>= \(SomeExpr e'T e'TE) ->
+                return $ SomeExpr e'T $ ELet (LetDecl (Text ident) le) e'TE 
 
     ST.EApp fun param _ -> 
         runChecker e fun >>= \(SomeExpr funT funTE) ->

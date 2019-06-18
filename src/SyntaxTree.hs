@@ -8,9 +8,9 @@ type Program a = [TopDef a]
 
 data TopDef a =
       DefLet  (LetDeclaration a) (Expr a)  a
-    | DefData { dataName :: String, dataCons :: [DataCon a] }
+    | DefData String [DataCon a]
 
-type DataCon a = [BType a]
+data DataCon a = DataCon String [BType a]
 
 data Literal a =
       LInt    Int     a

@@ -11,6 +11,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Basic.Single where
 
@@ -78,6 +79,10 @@ class Single k => EqDec k where
 instance EqDec k => TestEquality (Singl :: Demote k -> Type) where
     testEquality l r = l === r
 
+class Single a => KnownSingle (x :: Demote a) where
+    getSingl :: Singl x
+
+
 -- when using a RebindableSyntax for 'do' block, you can just define a top-level (>>=) operator
 -- to behave like (>=>) with the same type, so you wouldn't write 'where' part every time
 -- (then if you want to use 'do' with the monad, just add "where (>>=) = Prelude.(>>=)")
@@ -98,6 +103,11 @@ instance EqDec Bool where
     STrue === STrue = return Refl
     SFalse === SFalse = return Refl
     _ === _ = Nothing
+
+instance KnownSingle True where
+    getSingl = STrue
+instance KnownSingle False where
+    getSingl = SFalse
 
 
 type instance Demote [a] = [Demote a]
@@ -150,6 +160,19 @@ instance Single Text where
 type SText (x :: Symbol) = Singl x
 instance EqDec Text where
     (SText l) === (SText r) = sameSymbol l r
+
+instance KnownSymbol s => KnownSingle s where
+    getSingl = mkText @s
+
+
+type instance Demote (Proxy a) = Proxy (Demote a)
+instance Single a => Single (Proxy a) where
+    data instance Singl :: Proxy (Demote a) -> Type where
+        SProxy :: Singl (p :: Proxy (Demote a))
+    fromSingl :: forall p. Singl (p :: Proxy (Demote a)) -> Proxy a
+    fromSingl (SProxy :: Singl (p :: Proxy (Demote a))) = (Proxy :: Proxy a)
+    toSingl (Proxy :: Proxy a) = SomeSingl (SProxy :: (Singl ('Proxy :: Proxy (Demote a))))
+
 
 -- usage:
 -- mktext @"Hello world!"

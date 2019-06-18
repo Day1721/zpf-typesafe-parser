@@ -42,6 +42,16 @@ data Expr a =
     | ELet    (LetDeclaration a) (Expr a)  a
     | EApp    (Expr a) (Expr a)  a
     | ELambda String (BType a) (Expr a)  a
+    | EMatch  (Expr a) [Alt a] a
+  deriving (Eq, Show, Functor)
+
+data Alt a = Alt (Pattern a) (Expr a) a
+  deriving (Eq, Show, Functor)
+
+data Pattern a =
+      PVar String a
+    | PCon String [Pattern a] a
+    | PLit (Literal a) a
   deriving (Eq, Show, Functor)
 
 data LetDeclaration a =
@@ -76,6 +86,7 @@ instance Contextual Expr where
   context (ELet _ _ c) = c
   context (EApp _ _ c) = c
   context (ELambda _ _ _ c) = c
+  context (EMatch _ _ c) = c
 
 instance Contextual LetDeclaration where
   context (DLet _ _ c) = c

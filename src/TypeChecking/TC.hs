@@ -101,6 +101,8 @@ checkExpr e = \case
         checkExpr e' expr >>= \(SomeExpr exprT exprTE) ->
         return $ SomeExpr (t :~> exprT) $ EAbs x t exprTE
 
+    ST.EMatch _ _ _ -> unimplemented
+    
 checkLit :: ST.Literal a -> SomeLit
 checkLit = \case
     ST.LUnit     _ -> SomeLit SPUnit  LUnit

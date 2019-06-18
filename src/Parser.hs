@@ -55,7 +55,7 @@ parens = between (symbol "(") (symbol ")")
 reserved :: String -> Parser ()
 reserved w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
 
-reservedWords = ["let", "in", "fun", "type", "of"]
+reservedWords = ["let", "in", "fun", "type", "of", "match", "with"]
 
 identifier :: Parser String
 identifier = (lexeme . try) (p >>= check)
@@ -112,7 +112,7 @@ pExpr :: CtxParser Expr
 pExpr = pEApp
 
 pExprSimpl :: CtxParser Expr
-pExprSimpl = pELit <|> pEVar <|> pELet <|> pELambda <|> parens pExpr
+pExprSimpl = pELit <|> pEVar <|> pELet <|> pEMatch <|> pELambda <|> parens pExpr
 
 pELit :: CtxParser Expr
 pELit = withPosition (ELit <$> pLit)
@@ -126,6 +126,38 @@ pELet = withPosition $ do
     reserved "in"
     e <- pExpr
     return (ELet d e)
+
+pEMatch :: CtxParser Expr
+pEMatch = withPosition $ do
+    reserved "match"
+    e <- pExpr
+    reserved "with"
+    optional (symbol "|")
+    alts <- sepBy1 pAlt (symbol "|")
+    return (EMatch e alts)
+
+pAlt :: CtxParser Alt
+pAlt = withPosition $ do
+    pat <- pPat
+    symbol "->"
+    e <- pExpr
+    return (Alt pat e)
+
+pPat :: CtxParser Pattern
+pPat = withPosition (pPIdent <|> pPLit) <|> parens pPat
+
+pPLit = PLit <$> pLit
+
+pPIdent = do
+    ident <- identifier
+    if isLower (head ident) then
+        return (PVar ident)
+    else do
+        mpats <- optional (many pPat)
+        let pats = case mpats of
+                    Nothing -> []
+                    Just xs -> xs
+        return (PCon ident pats)
 
 many1 p = do
     a1 <- p

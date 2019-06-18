@@ -1,6 +1,7 @@
 module Parser where
 
 import Data.String
+import Data.Char
 import Control.Monad
 import Control.Applicative (empty)
 import Text.Megaparsec
@@ -54,7 +55,7 @@ parens = between (symbol "(") (symbol ")")
 reserved :: String -> Parser ()
 reserved w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
 
-reservedWords = ["let", "in", "fun", "type"]
+reservedWords = ["let", "in", "fun", "type", "of"]
 
 identifier :: Parser String
 identifier = (lexeme . try) (p >>= check)
@@ -70,8 +71,34 @@ withPosition p = do
     f <- p
     return (f pos)
 
-pDeclaration :: CtxParser LetDeclaration
-pDeclaration = pDLet
+pTopDef :: CtxParser TopDef
+pTopDef = pDefLet <|> pDefData
+
+pDefData :: CtxParser TopDef
+pDefData = withPosition $ do
+    reserved "type"
+    name <- identifier
+    symbol "="
+    optional (symbol "|")
+    cons <- sepBy1 pDataCon (symbol "|")
+    return (DefData name cons)
+
+pDataCon :: CtxParser DataCon
+pDataCon = withPosition $ do
+    name <- identifier
+    if isLower (head name) then
+        fail "Constructor name must start with capital letter"
+    else return ()
+    mts <- optional (reserved "of" >> many1 pBType)
+    let types = case mts of
+                    Nothing -> []
+                    Just ts -> ts
+    return (DataCon name types)
+
+pDefLet :: CtxParser TopDef
+pDefLet = withPosition $ do
+    ld <- pDLet
+    return (DefLet ld)
 
 pDLet :: CtxParser LetDeclaration
 pDLet = withPosition $ do
@@ -100,6 +127,9 @@ pELet = withPosition $ do
     e <- pExpr
     return (ELet d e)
 
+many1 p = do
+    a1 <- p
+    many p >>= \l -> return $ a1 : l
 many2 p = do
     a1 <- p
     a2 <- p
@@ -129,13 +159,14 @@ pBType = makeExprParser typeTerm typeOpers where
         <|> withPosition (TUnit <$ symbol "unit")
         <|> withPosition (TInt  <$ symbol "int")
         <|> withPosition (TStr  <$ symbol "string")
+        <|> withPosition (TData <$> identifier)
     typeOpers = [[InfixR (symbol "->" >> funPars)]]
     funPars = withPosition $ return $ \p x y -> TFun x y p
 
 pLInt = LInt <$> integer
 pLDouble = LDouble <$> double
 pLChar = between (char '\'') (char '\'') (LChar <$> L.charLiteral)
-pLString = LString <$> (char '\"' >> manyTill L.charLiteral (char '\"')) -- TODO add support for escapes
+pLString = LString <$> (char '\"' >> manyTill L.charLiteral (char '\"'))
 pLUnit = symbol "()" >> return LUnit
 pLBool = LBool <$> try ((reserved "true" >> return True) <|> (reserved "false" >> return False))
 

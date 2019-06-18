@@ -5,12 +5,15 @@ class Contextual t where
   context :: t a -> a
 
 type Program a = [TopDef a]
+  deriving (Eq, Show, Functor)
 
 data TopDef a =
-      DefLet  (LetDeclaration a) (Expr a)  a
-    | DefData String [DataCon a]
+      DefLet  (LetDeclaration a)  a
+    | DefData String [DataCon a] a
+  deriving (Eq, Show, Functor)
 
-data DataCon a = DataCon String [BType a]
+data DataCon a = DataCon String [BType a] a
+  deriving (Eq, Show, Functor)
 
 data Literal a =
       LInt    Int     a
@@ -25,6 +28,7 @@ data BType a =
       TInt  a
     | TUnit a
     | TStr  a
+    | TData String a
     | TFun  (BType a) (BType a)  a 
   deriving (Eq, Show, Functor)
 
@@ -52,6 +56,7 @@ instance Contextual BType where
   context (TInt c) = c
   context (TUnit c) = c
   context (TStr c) = c
+  context (TData _ c) = c
   context (TFun _ _ c) = c
 
 instance Contextual Expr where
